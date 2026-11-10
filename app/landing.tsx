@@ -101,16 +101,21 @@ export default function ChessLanding() {
 
 function PracticeBoard() {
   const boardRef = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState({ file: 4, row: 4 });
+  const dragOffset = useRef({ x: 0, y: 0 });
+  const [position, setPosition] = useState({ x: 50, y: 50 });
   const [dragging, setDragging] = useState(false);
   const files = "abcdefgh";
+  const pawnRadius = 8;
 
   function moveToPointer(clientX: number, clientY: number) {
     const bounds = boardRef.current?.getBoundingClientRect();
-    if (!bounds || clientX < bounds.left || clientY < bounds.top || clientX >= bounds.right || clientY >= bounds.bottom) return;
-    const file = Math.floor(((clientX - bounds.left) / bounds.width) * 8);
-    const row = Math.floor(((clientY - bounds.top) / bounds.height) * 8);
-    setPosition({ file, row });
+    if (!bounds) return;
+    const x = ((clientX - bounds.left - dragOffset.current.x) / bounds.width) * 100;
+    const y = ((clientY - bounds.top - dragOffset.current.y) / bounds.height) * 100;
+    setPosition({
+      x: Math.min(100 - pawnRadius, Math.max(pawnRadius, x)),
+      y: Math.min(100 - pawnRadius, Math.max(pawnRadius, y)),
+    });
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
@@ -122,26 +127,37 @@ function PracticeBoard() {
     if (!direction) return;
     event.preventDefault();
     setPosition((current) => ({
-      file: Math.min(7, Math.max(0, current.file + direction.file)),
-      row: Math.min(7, Math.max(0, current.row + direction.row)),
+      x: Math.min(100 - pawnRadius, Math.max(pawnRadius, current.x + direction.file * 2.5)),
+      y: Math.min(100 - pawnRadius, Math.max(pawnRadius, current.y + direction.row * 2.5)),
     }));
   }
 
-  const square = `${files[position.file]}${8 - position.row}`;
+  const square = `${files[Math.min(7, Math.floor(position.x / 12.5))]}${8 - Math.min(7, Math.floor(position.y / 12.5))}`;
 
-  return <div className="board-graphic" ref={boardRef} aria-label="Interactive chessboard. Move the pawn by dragging it to a square or using the arrow keys.">
+  return <div className="board-graphic" ref={boardRef} aria-label="Interactive chessboard. Move the pawn freely inside the board by dragging it or using the arrow keys.">
     {Array.from({ length: 64 }, (_, index) => <span aria-hidden="true" className={(Math.floor(index / 8) + index % 8) % 2 ? "is-dark" : ""} key={index} />)}
     <button
-      aria-label={`White pawn on ${square}. Drag it to another square or use the arrow keys. It stays inside the board.`}
+      aria-label={`White pawn near ${square}. Drag it freely inside the board or use the arrow keys. It stays within the board edges.`}
       className={`board-pawn${dragging ? " is-dragging" : ""}`}
       onKeyDown={handleKeyDown}
       onLostPointerCapture={() => setDragging(false)}
-      onPointerDown={(event) => { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); setDragging(true); }}
+      onPointerDown={(event) => {
+        event.preventDefault();
+        const board = boardRef.current?.getBoundingClientRect();
+        if (board) {
+          dragOffset.current = {
+            x: event.clientX - (board.left + (position.x / 100) * board.width),
+            y: event.clientY - (board.top + (position.y / 100) * board.height),
+          };
+        }
+        event.currentTarget.setPointerCapture(event.pointerId);
+        setDragging(true);
+      }}
       onPointerMove={(event) => { if (dragging && event.buttons !== 0) moveToPointer(event.clientX, event.clientY); }}
       onPointerUp={(event) => { if (dragging) moveToPointer(event.clientX, event.clientY); setDragging(false); }}
-      style={{ left: `${position.file * 12.5}%`, top: `${position.row * 12.5}%` }}
+      style={{ left: `${position.x}%`, top: `${position.y}%` }}
       type="button"
-    >♙</button>
+    ><span aria-hidden="true">♙</span></button>
     <span className="sr-only" aria-live="polite">White pawn is on {square}.</span>
   </div>;
 }

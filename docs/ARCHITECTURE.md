@@ -11,9 +11,10 @@ flowchart TD
   Workspace --> Mentor[Mentor API]
   Workspace --> Games[Games API]
   Mentor --> Rules[chess.js validation and rule-based note]
-  Games --> Store[SQLite store]
+  Games --> Store[Storage adapter]
   Summary --> Store
-  Store --> File[.data/chess.sqlite]
+  Store --> Local[SQLite .data/chess.sqlite]
+  Store --> Cloud[Postgres DATABASE_URL]
 ```
 
 ## Page routes
@@ -33,8 +34,8 @@ flowchart TD
 - `GET /api/chess/games` lists stored sessions.
 - `POST /api/chess/games` validates matching PGN/FEN data and saves the session.
 
-The API handlers live in `app/api/chess/`; shared persistence is in `store.ts` beside those handlers. The local database is created under `.data/` and excluded from Git.
+The API handlers live in `app/api/chess/`; shared persistence is in `store.ts` beside those handlers. Local development defaults to SQLite under `.data/`. On Vercel, `DATABASE_URL` selects Postgres so saved games persist across serverless instances. The `games` table is initialized lazily on the first request.
 
 ## Runtime boundary
 
-The UI is rendered by Next.js. Interactive screens are client components; API handlers run on the server. The games endpoint selects the Node.js runtime because it uses `node:sqlite`. The SQLite file is local to the running instance, so this storage design is for local development and is not durable across serverless deployments.
+The UI is rendered by Next.js. Interactive screens are client components; API handlers run on the Node.js runtime. Local SQLite is only for development; Vercel uses the hosted Postgres connection configured through `DATABASE_URL`.

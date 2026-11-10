@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { Chess } from "chess.js";
-import { chessDb, listRecentGames } from "../store";
+import { listRecentGames, saveGame } from "../store";
 
 export const runtime = "nodejs";
 
 export async function GET() {
-  return NextResponse.json({ games: listRecentGames() });
+  try {
+    return NextResponse.json({ games: await listRecentGames() });
+  } catch {
+    return NextResponse.json({ error: "Game storage is unavailable. Configure DATABASE_URL for this deployment." }, { status: 503 });
+  }
 }
 
 export async function POST(request: Request) {
@@ -16,20 +20,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "A valid game id, PGN, and board position are required." }, { status: 400 });
   }
 
+  let game: Chess;
   try {
-    const game = new Chess();
+    game = new Chess();
     if (body.pgn) game.loadPgn(body.pgn);
     if (game.fen() !== body.fen) return NextResponse.json({ error: "The move history and board position do not match." }, { status: 422 });
-    const moves = game.history().length;
-    const title = moves >= 6 ? "A line worth remembering" : "Position exploration";
-    const updatedAt = new Date().toISOString();
-    chessDb.prepare(`INSERT INTO games (id, title, pgn, fen, move_count, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?)
-      ON CONFLICT(id) DO UPDATE SET title=excluded.title, pgn=excluded.pgn, fen=excluded.fen,
-      move_count=excluded.move_count, updated_at=excluded.updated_at`)
-      .run(body.id, title, body.pgn, body.fen, moves, updatedAt);
-    return NextResponse.json({ id: body.id, title, moveCount: moves, updatedAt });
   } catch {
     return NextResponse.json({ error: "The game history could not be saved." }, { status: 422 });
+  }
+
+  const moves = game.history().length;
+  const title = moves >= 6 ? "A line worth remembering" : "Position exploration";
+  const updatedAt = new Date().toISOString();
+  try {
+    await saveGame({ id: body.id, title, pgn: body.pgn, fen: body.fen, move_count: moves, updated_at: updatedAt });
+    return NextResponse.json({ id: body.id, title, moveCount: moves, updatedAt });
+  } catch {
+    return NextResponse.json({ error: "Game storage is unavailable. Configure DATABASE_URL for this deployment." }, { status: 503 });
   }
 }

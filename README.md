@@ -12,11 +12,11 @@ A focused chess learning workspace that helps players understand the intent behi
 - Interactive practice board with legal moves, undo, and position exploration.
 - Rule-based mentor notes that explain the idea behind a move.
 - Game review, move history, and progress views.
-- Local SQLite storage for practice sessions.
+- SQLite storage locally and Postgres-backed saved games on Vercel.
 
 ## Quick start
 
-**Requirements:** Node.js 24 or newer and npm.
+**Requirements:** Node.js 24.x and npm.
 
 ```bash
 npm install
@@ -33,7 +33,11 @@ npm run build
 npm start
 ```
 
-Practice sessions are stored in `.data/chess.sqlite` on the local machine. The `.data` directory is ignored by Git. There are no required environment variables.
+Practice sessions are stored in `.data/chess.sqlite` locally. Set `DATABASE_URL` to use Postgres in local development or on Vercel. See [Vercel deployment](docs/VERCEL_DEPLOYMENT.md) and [`.env.example`](.env.example).
+
+## Deploy
+
+Import the GitHub repository into Vercel and connect a Postgres Marketplace integration. See the [deployment guide](docs/VERCEL_DEPLOYMENT.md) for the required environment setup and prototype access limitations.
 
 ## API
 
@@ -46,7 +50,7 @@ Practice sessions are stored in `.data/chess.sqlite` on the local machine. The `
 
 ## Documentation
 
-Project architecture, reliability, security, roadmap, and contributor guidance are indexed in [`docs/README.md`](docs/README.md).
+Project architecture, Vercel deployment, reliability, security, roadmap, and contributor guidance are indexed in [`docs/README.md`](docs/README.md).
 
 ## Security
 

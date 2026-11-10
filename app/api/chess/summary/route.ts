@@ -1,8 +1,16 @@
 import { NextResponse } from "next/server";
 import { listRecentGames } from "../store";
 
+export const runtime = "nodejs";
+
 export async function GET() {
-  const savedGames = listRecentGames();
+  let savedGames;
+  try {
+    savedGames = await listRecentGames();
+  } catch {
+    return NextResponse.json({ error: "Game storage is unavailable. Configure DATABASE_URL for this deployment." }, { status: 503 });
+  }
+
   return NextResponse.json({
     learner: { name: "Alex", rating: 1240, streak: 6, weeklyMinutes: 84 },
     focus: { title: "Spot the loose piece", detail: "You missed undefended pieces in 3 of your last 8 games.", progress: 62 },

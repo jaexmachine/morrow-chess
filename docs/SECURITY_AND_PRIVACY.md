@@ -2,7 +2,7 @@
 
 ## Data handled
 
-Practice PGN/FEN and timestamps are written to `.data/chess.sqlite` on the local machine. The prototype has no account system and does not intentionally collect contact details. Sample dashboard data is illustrative.
+Practice PGN/FEN and timestamps are written to local `.data/chess.sqlite`, or to the Postgres database configured by `DATABASE_URL`. The prototype has no account system and does not intentionally collect contact details. Sample dashboard data is illustrative.
 
 ## Safeguards in place
 
@@ -14,7 +14,7 @@ Practice PGN/FEN and timestamps are written to `.data/chess.sqlite` on the local
 
 ## Known limitations
 
-There is no authentication, rate limiting, remote database isolation, audit logging, or production privacy policy. Treat the prototype as local-only; do not submit sensitive personal information or rely on its local SQLite file for durable storage.
+There is no authentication, rate limiting, per-player data isolation, audit logging, or production privacy policy. On a hosted deployment, saved games are shared through the configured database and the API is publicly reachable unless access to the deployment is protected. Do not submit sensitive personal information. See the [Vercel deployment guide](VERCEL_DEPLOYMENT.md) before exposing a deployment.
 
 ## Reporting
 
