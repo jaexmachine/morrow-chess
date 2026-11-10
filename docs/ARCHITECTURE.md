@@ -7,6 +7,7 @@ flowchart TD
   Visitor[Browser] --> Pages[Next.js pages]
   Pages --> Landing[Landing page]
   Pages --> Workspace[Dashboard, play, review, progress]
+  Workspace --> BrowserStore[Browser localStorage]
   Workspace --> Summary[Summary API]
   Workspace --> Mentor[Mentor API]
   Workspace --> Games[Games API]
@@ -14,7 +15,7 @@ flowchart TD
   Games --> Store[Storage adapter]
   Summary --> Store
   Store --> Local[SQLite .data/chess.sqlite]
-  Store --> Cloud[Postgres DATABASE_URL]
+  Store --> Cloud[Optional Postgres DATABASE_URL]
 ```
 
 ## Page routes
@@ -34,8 +35,8 @@ flowchart TD
 - `GET /api/chess/games` lists stored sessions.
 - `POST /api/chess/games` validates matching PGN/FEN data and saves the session.
 
-The API handlers live in `app/api/chess/`; shared persistence is in `store.ts` beside those handlers. Local development defaults to SQLite under `.data/`. On Vercel, `DATABASE_URL` selects Postgres so saved games persist across serverless instances. The `games` table is initialized lazily on the first request.
+The workspace saves each practice game to browser `localStorage` first, so it works on Vercel without a database. The API handlers live in `app/api/chess/`; shared persistence is in `store.ts` beside those handlers. Local development defaults to SQLite under `.data/`. An optional `DATABASE_URL` selects Postgres for shared server-side history; the `games` table is initialized lazily on first use.
 
 ## Runtime boundary
 
-The UI is rendered by Next.js. Interactive screens are client components; API handlers run on the Node.js runtime. Local SQLite is only for development; Vercel uses the hosted Postgres connection configured through `DATABASE_URL`.
+The UI is rendered by Next.js. Interactive screens are client components; API handlers run on the Node.js runtime. Browser saves are device-local. Local SQLite supports development, while optional Postgres supports server-side shared history when configured.

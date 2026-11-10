@@ -17,6 +17,33 @@ type Summary = {
   skills: Array<{ name: string; score: number; delta: string }>;
 };
 
+type BrowserSavedGame = {
+  id: string;
+  title: string;
+  pgn: string;
+  fen: string;
+  move_count: number;
+  updated_at: string;
+};
+
+const browserGamesKey = "morrow-chess.games.v1";
+const browserGamesUpdatedEvent = "morrow-chess:games-updated";
+const fallbackSummary: Summary = {
+  learner: { name: "Alex", rating: 1240, streak: 6, weeklyMinutes: 84 },
+  focus: { title: "Spot the loose piece", detail: "You missed undefended pieces in 3 of your last 8 games.", progress: 62 },
+  recent: [
+    { date: "Today", title: "A calmer Sicilian", result: "WIN", accuracy: 86, theme: "Space & development" },
+    { date: "Yesterday", title: "The rook endgame", result: "DRAW", accuracy: 79, theme: "King activity" },
+    { date: "Nov 08", title: "Pressure on the e-file", result: "LOSS", accuracy: 72, theme: "Loose pieces" },
+  ],
+  skills: [
+    { name: "Piece safety", score: 68, delta: "+8" },
+    { name: "Opening plans", score: 74, delta: "+3" },
+    { name: "King safety", score: 57, delta: "+6" },
+    { name: "Endgames", score: 43, delta: "+2" },
+  ],
+};
+
 const symbols: Record<string, string> = { wk: "♔", wq: "♕", wr: "♖", wb: "♗", wn: "♘", wp: "♙", bk: "♚", bq: "♛", br: "♜", bb: "♝", bn: "♞", bp: "♟" };
 const navigation: Array<{ id: Page; label: string; icon: string; href: string }> = [
   { id: "dashboard", label: "Today", icon: "⌂", href: "/app" },
@@ -24,6 +51,70 @@ const navigation: Array<{ id: Page; label: string; icon: string; href: string }>
   { id: "review", label: "Game review", icon: "↗", href: "/review" },
   { id: "progress", label: "Your progress", icon: "◷", href: "/progress" },
 ];
+
+function readBrowserGames(): BrowserSavedGame[] {
+  try {
+    const value: unknown = JSON.parse(window.localStorage.getItem(browserGamesKey) ?? "[]");
+    if (!Array.isArray(value)) return [];
+
+    return value.filter((item): item is BrowserSavedGame =>
+      item !== null && typeof item === "object"
+      && typeof item.id === "string"
+      && typeof item.title === "string"
+      && typeof item.pgn === "string"
+      && typeof item.fen === "string"
+      && typeof item.move_count === "number"
+      && typeof item.updated_at === "string",
+    ).sort((a, b) => b.updated_at.localeCompare(a.updated_at)).slice(0, 30);
+  } catch {
+    return [];
+  }
+}
+
+function withBrowserGames(summary: Summary): Summary {
+  const games = readBrowserGames();
+  if (!games.length) return summary;
+
+  return {
+    ...summary,
+    recent: games.slice(0, 10).map((game) => ({
+      date: new Date(game.updated_at).toLocaleDateString("en-US", { month: "short", day: "2-digit" }),
+      title: game.title,
+      result: "IN PROGRESS",
+      accuracy: Math.min(96, 70 + game.move_count),
+      theme: `${game.move_count} moves explored`,
+    })),
+  };
+}
+
+function isSummary(value: unknown): value is Summary {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<Summary>;
+  return Boolean(candidate.learner && typeof candidate.learner.streak === "number"
+    && candidate.focus && typeof candidate.focus.title === "string"
+    && Array.isArray(candidate.recent) && Array.isArray(candidate.skills));
+}
+
+function saveBrowserGame(id: string, game: Chess) {
+  const moves = game.history().length;
+  const savedGame: BrowserSavedGame = {
+    id,
+    title: moves >= 6 ? "A line worth remembering" : "Position exploration",
+    pgn: game.pgn(),
+    fen: game.fen(),
+    move_count: moves,
+    updated_at: new Date().toISOString(),
+  };
+
+  try {
+    const games = readBrowserGames().filter((item) => item.id !== id);
+    window.localStorage.setItem(browserGamesKey, JSON.stringify([savedGame, ...games].slice(0, 30)));
+    window.dispatchEvent(new Event(browserGamesUpdatedEvent));
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 function identifyOpening(moves: string[]) {
   const line = moves.join(" ");
@@ -37,11 +128,29 @@ function identifyOpening(moves: string[]) {
 
 export default function ChessWorkspace({ page }: { page: Page }) {
   const pathname = usePathname();
-  const [summary, setSummary] = useState<Summary | null>(null);
+  const [summary, setSummary] = useState<Summary | null>(fallbackSummary);
   const queenRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch("/api/chess/summary").then((r) => r.json()).then(setSummary).catch(() => setSummary(null));
+    let active = true;
+    const refreshLocalGames = () => setSummary((current) => withBrowserGames(current ?? fallbackSummary));
+    window.addEventListener(browserGamesUpdatedEvent, refreshLocalGames);
+
+    fetch("/api/chess/summary")
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Summary service is unavailable.");
+        const data: unknown = await response.json();
+        if (!isSummary(data)) throw new Error("Summary response is invalid.");
+        if (active) setSummary(withBrowserGames(data));
+      })
+      .catch(() => {
+        if (active) setSummary((current) => withBrowserGames(current ?? fallbackSummary));
+      });
+
+    return () => {
+      active = false;
+      window.removeEventListener(browserGamesUpdatedEvent, refreshLocalGames);
+    };
   }, []);
 
   useEffect(() => {
@@ -61,7 +170,7 @@ export default function ChessWorkspace({ page }: { page: Page }) {
       <div className="sidebar-bottom"><div className="mentor-mini"><div className="mentor-orbit"><span>♔</span></div><div><small>MENTOR NOTE</small><p>Small plans build<br />strong habits.</p></div></div><div className="profile-row"><span className="avatar">A</span><span><b>Alex Morgan</b><small>Curious learner</small></span><span className="more">···</span></div></div>
     </aside>
     <main className="chess-main">
-      <header className="chess-topbar"><div className="breadcrumb">YOUR SPACE <span>/</span> {navigation.find((item) => item.id === page)?.label.toUpperCase()}</div><div className="top-actions"><span className="streak-pill">✳ <b>{summary?.learner.streak ?? 6}</b> day streak</span><button className="icon-button" aria-label="Notifications">♧<i /></button></div></header>
+      <header className="chess-topbar"><div className="breadcrumb">YOUR SPACE <span>/</span> {navigation.find((item) => item.id === page)?.label.toUpperCase()}</div><div className="top-actions"><span className="streak-pill">✳ <b>{summary?.learner?.streak ?? 6}</b> day streak</span><button className="icon-button" aria-label="Notifications">♧<i /></button></div></header>
       {page === "dashboard" && <Dashboard summary={summary} queenRef={queenRef} />}
       {page === "play" && <Play />}
       {page === "review" && <Review summary={summary} />}
@@ -117,18 +226,21 @@ function Play() {
     if (!move) { setSelected(null); return; }
     const san = move.san;
     setFen(game.fen()); setSelected(null); setBusy(true);
+    if (!gameIdRef.current) gameIdRef.current = crypto.randomUUID();
+    const gameId = gameIdRef.current;
+    const locallySaved = saveBrowserGame(gameId, game);
+    if (!locallySaved) setNotice("This browser could not save the game. Your move is still on the board.");
     try {
       const response = await fetch("/api/chess/mentor", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fen: before, san, ply: game.history().length }) });
       const result = await response.json(); setNotice(result.message ?? "Your move is on the board.");
     } catch { setNotice("Move recorded. Your mentor is having trouble connecting."); }
     try {
-      if (!gameIdRef.current) gameIdRef.current = crypto.randomUUID();
-      await fetch("/api/chess/games", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: gameIdRef.current, pgn: game.pgn(), fen: game.fen() }) });
+      await fetch("/api/chess/games", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: gameId, pgn: game.pgn(), fen: game.fen() }) });
     } catch { /* Keep the board usable if local save is unavailable. */ }
     finally { setBusy(false); }
   }
 
-  async function undo() { if (!game.undo()) return; setFen(game.fen()); setSelected(null); setBranch((n) => n + 1); setNotice("We stepped back. Try another idea and compare how the position changes."); if (gameIdRef.current) await fetch("/api/chess/games", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: gameIdRef.current, pgn: game.pgn(), fen: game.fen() }) }).catch(() => {}); }
+  async function undo() { if (!game.undo()) return; setFen(game.fen()); setSelected(null); setBranch((n) => n + 1); setNotice("We stepped back. Try another idea and compare how the position changes."); if (gameIdRef.current) { saveBrowserGame(gameIdRef.current, game); await fetch("/api/chess/games", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: gameIdRef.current, pgn: game.pgn(), fen: game.fen() }) }).catch(() => {}); } }
   function reset() { game.reset(); setFen(game.fen()); gameIdRef.current = ""; setSelected(null); setBranch(0); setNotice("A fresh board. What would you like to explore?"); }
 
   return <div className="page-content play-page"><div className="play-heading"><div><div className="eyebrow"><span className="eyebrow-line" /> LEARN BY EXPLORING</div><h1>Make a move.<br /><em>Find its meaning.</em></h1></div><span className="session-label"><i /> PRACTICE SESSION</span></div><div className="play-layout"><section className="board-panel"><div className="board-topline"><span>POSITION EXPLORER</span><span>{game.turn() === "w" ? "WHITE" : "BLACK"} TO MOVE</span></div><div className="board-wrap"><div className="chessboard" role="grid" aria-label="Interactive chess board">{displayedSquares.map(({ piece, square, rank, file }) => { const light = (rank + file) % 2 === 0; const isSelected = selected === square; const edgeFile = flipped ? file === 7 : file === 0; const edgeRank = flipped ? rank === 0 : rank === 7; return <button key={square} type="button" role="gridcell" aria-label={`${square}${piece ? ` ${piece.color === "w" ? "white" : "black"} ${piece.type}` : " empty"}`} className={`board-square ${light ? "light" : "dark"} ${isSelected ? "selected" : ""}`} onClick={() => choose(square)} onDragOver={(e) => e.preventDefault()} onDrop={() => choose(square)}>{piece && <span draggable onDragStart={() => setSelected(square)} className={`piece ${piece.color === "w" ? "piece-white" : "piece-black"}`}>{symbols[`${piece.color}${piece.type}`]}</span>}{edgeFile && <small className={light ? "coord-dark" : "coord-light"}>{flipped ? rank + 1 : 8 - rank}</small>}{edgeRank && <small className={`file-coord ${light ? "coord-dark" : "coord-light"}`}>{files[flipped ? 7 - file : file]}</small>}</button>; })}</div></div><div className="board-controls"><button onClick={undo} className="control-button">← <span>Undo</span></button><button onClick={reset} className="control-button">↻ <span>Reset</span></button><div className="branch-count">{branch ? `${branch} alternate ${branch === 1 ? "line" : "lines"} explored` : "Learn mode · explore freely"}</div><button className="control-button" onClick={() => setFlipped((value) => !value)}>⇅ <span>Flip</span></button></div></section><aside className="mentor-panel"><div className="mentor-panel-head"><span className="mentor-avatar">♔</span><div><small>YOUR PERSONAL MENTOR</small><b>Let’s think it through</b></div><span className="online-dot" /></div><div className="mentor-message"><div className="message-tag">POSITION NOTE <span>✳</span></div><p>{notice}</p><div className="mentor-question">What does your move improve — and what does it leave behind?</div></div><div className="position-detail"><div className="detail-label">MOVE HISTORY</div><div className="move-history">{game.history().length ? game.history().map((move, i) => <span key={`${i}-${move}`}><small>{Math.floor(i / 2) + 1}{i % 2 ? "..." : "."}</small>{move}</span>) : <span className="empty-moves">The first move is yours.</span>}</div><div className="detail-label opening-label">OPENING PATTERN <span>DETECTING</span></div><div className="opening-note">{game.history().length >= 2 ? identifyOpening(game.history()) : "Waiting for a few moves"}</div></div><div className="mentor-panel-foot"><span>RULE-BASED GUIDANCE</span><span>UNDO WITH <kbd>CTRL</kbd> + <kbd>Z</kbd></span></div></aside></div><p className="play-footnote">Explore freely. Undo a move to try another line and see what changes.</p></div>;

@@ -4,17 +4,15 @@
 
 Morrow Chess uses Next.js and is detected automatically by Vercel. It targets Node.js 24.x. No custom build command or output directory is needed.
 
-Saved games need durable storage. Local development uses SQLite in `.data/chess.sqlite`; Vercel deployments use Postgres through `DATABASE_URL`. The app creates the `games` table on its first database request.
+The app can be deployed without a database or accounts. Practice sessions are saved in the visitor’s browser, so they remain on that device and browser only. The dashboard falls back to sample progress when server-side storage is not configured.
 
 ## Deploy from GitHub
 
 1. Import `jaexmachine/morrow-chess` from the Vercel dashboard.
 2. Keep the project root at `.` and the detected Next.js framework settings.
-3. Add a Postgres integration from the Vercel Marketplace, such as Neon, and connect it to the project. Use a pooled connection string if the provider offers one.
-4. Set the provider's connection string as `DATABASE_URL` for Production and Preview. Keep the value in Vercel's environment variable settings; never commit it.
-5. Deploy. Vercel will build the project and create the `games` table the first time the games API is used.
+3. Deploy. Browser-local practice saves work without environment variables.
 
-The same `DATABASE_URL` can be added to `.env.local` when you want to run local development against the hosted database. Otherwise, leave it unset locally and use SQLite.
+When you’re ready for shared, cross-device game history, connect a Postgres integration and set its pooled connection string as `DATABASE_URL` in Vercel. The games API creates its table on first use. For local development, leave the variable unset to use `.data/chess.sqlite`.
 
 ## Local Vercel preview
 
@@ -22,4 +20,4 @@ Install the Vercel CLI, link the project, pull its environment variables, then r
 
 ## Important prototype limitation
 
-The app has no accounts or per-player authorization yet. A deployment connected to a database shares saved practice games between visitors, and the games API is publicly reachable unless the deployment is protected. Use Vercel Deployment Protection for private demos; add authentication and per-user data ownership before using it as a public multi-user service.
+The app has no accounts. Browser-local saves are separate per browser profile and are cleared if that browser’s site data is removed. If you connect a shared database later, saved games will be shared between visitors until authentication and per-user ownership are added. Use Vercel Deployment Protection for private demos.
