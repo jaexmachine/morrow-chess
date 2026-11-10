@@ -1,0 +1,148 @@
+"use client";
+
+import { useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
+import Link from "next/link";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+const pawn = `       .---.\n      /     \\\n     |       |\n     |       |\n      \\     /\n       |   |\n       |   |\n      /     \\\n     /       \\\n    /_________\\`;
+
+export default function ChessLanding() {
+  const sceneRef = useRef<HTMLElement>(null);
+  const pawnRef = useRef<HTMLDivElement>(null);
+  const messageRef = useRef<HTMLDivElement>(null);
+  const noteRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    gsap.registerPlugin(ScrollTrigger);
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reducedMotion) return;
+
+    const context = gsap.context(() => {
+      const timeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: sceneRef.current,
+          start: "top top",
+          end: "+=1150",
+          scrub: 0.8,
+          pin: true,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
+        },
+      });
+
+      timeline
+        .to(pawnRef.current, { rotateY: 390, rotateX: -12, y: -70, scale: 0.62, ease: "none" }, 0)
+        .to(noteRef.current, { opacity: 0, y: -26, ease: "none" }, 0)
+        .to(messageRef.current, { opacity: 1, y: 0, ease: "none" }, 0.34);
+    }, sceneRef);
+
+    return () => context.revert();
+  }, []);
+
+  return (
+    <main className="morrow-landing">
+      <header className="landing-header">
+        <Link className="landing-brand" href="/" aria-label="Morrow Chess Mentor home">
+          <span className="landing-mark">M</span><span>MORROW<span className="brand-small">CHESS MENTOR</span></span>
+        </Link>
+        <nav aria-label="Main navigation">
+          <a href="#method">THE METHOD</a>
+          <a href="#practice">PRACTICE</a>
+          <Link className="header-app-link" href="/app">OPEN THE APP <span>↗</span></Link>
+        </nav>
+      </header>
+
+      <section className="pawn-scene" ref={sceneRef} aria-label="Meet your chess mentor">
+        <div className="scene-topline"><span>PERSONAL CHESS MENTOR</span><span>01 / 03</span></div>
+        <div className="dot-field" aria-hidden="true" />
+        <div className="pawn-orbit" aria-hidden="true"><span /><span /><span /></div>
+        <div className="ascii-pawn" ref={pawnRef} role="img" aria-label="A floating ASCII chess pawn">
+          <pre className="pawn-depth pawn-depth-three">{pawn}</pre>
+          <pre className="pawn-depth pawn-depth-two">{pawn}</pre>
+          <pre className="pawn-depth pawn-depth-one">{pawn}</pre>
+          <pre className="pawn-face">{pawn}</pre>
+        </div>
+        <div className="pawn-coordinate" aria-hidden="true">A SMALL PIECE.<br />A BIGGER PICTURE.</div>
+        <div className="scene-note" ref={noteRef}><span className="scroll-line" />SCROLL TO SEE WHAT OPENS UP</div>
+        <div className="landing-reveal" ref={messageRef}>
+          <p className="eyebrow-mono">LEARN THE REASON BEHIND THE MOVE</p>
+          <h1>PLAY WITH<br />MORE <span>INTENT.</span></h1>
+          <p className="hero-description">A chess mentor that helps you see what your moves mean — and turn the patterns you miss into the progress you can feel.</p>
+          <Link className="landing-cta" href="/app">STEP INTO YOUR WORKSPACE <span>↗</span></Link>
+        </div>
+        <div className="scene-bottomline"><span>FOCUS / REFLECT / IMPROVE</span><span>SCROLL TO EXPLORE ↓</span></div>
+      </section>
+
+      <section className="landing-intro" id="method">
+        <div className="intro-copy"><h2>Not just the best move.<br /><span>Why it matters.</span></h2><p>Every position holds a choice. Morrow helps you understand the pressure, possibility, and purpose behind each one — so your next decision is yours to make.</p></div>
+      </section>
+
+      <section className="learning-sequence" id="practice">
+        <div className="sequence-heading"><span className="eyebrow-mono">A PRACTICE THAT ADDS UP</span><h2>See it.<br />Understand it.<br /><span>Use it.</span></h2></div>
+        <div className="sequence-steps">
+          <article><span>01 / REVIEW</span><h3>Look back without judgment.</h3><p>Find the moments that changed your game, with a mentor who makes the position easier to read.</p><b>↘</b></article>
+          <article><span>02 / EXPLORE</span><h3>Try another way through.</h3><p>Compare candidate moves, follow the consequences, and learn what the board was asking of you.</p><b>↘</b></article>
+          <article><span>03 / RETURN</span><h3>Notice what’s getting stronger.</h3><p>See the patterns you’re improving and choose one clear idea to take into your next game.</p><b>↗</b></article>
+        </div>
+      </section>
+
+      <section className="landing-board-section">
+        <PracticeBoard />
+      </section>
+
+      <footer className="landing-footer">
+        <div className="footer-top"><span className="eyebrow-mono">THE NEXT GOOD MOVE STARTS HERE</span><Link href="/app">OPEN MORROW <span>↗</span></Link></div>
+        <div className="footer-bottom"><Link className="landing-brand" href="/"><span className="landing-mark">M</span><span>MORROW<span className="brand-small">CHESS MENTOR</span></span></Link><span>THINK CLEARER. PLAY YOUR GAME.</span><span>© MORROW 2026</span></div>
+      </footer>
+    </main>
+  );
+}
+
+function PracticeBoard() {
+  const boardRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState({ file: 4, row: 4 });
+  const [dragging, setDragging] = useState(false);
+  const files = "abcdefgh";
+
+  function moveToPointer(clientX: number, clientY: number) {
+    const bounds = boardRef.current?.getBoundingClientRect();
+    if (!bounds || clientX < bounds.left || clientY < bounds.top || clientX >= bounds.right || clientY >= bounds.bottom) return;
+    const file = Math.floor(((clientX - bounds.left) / bounds.width) * 8);
+    const row = Math.floor(((clientY - bounds.top) / bounds.height) * 8);
+    setPosition({ file, row });
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    const directions: Record<string, { file: number; row: number }> = {
+      ArrowLeft: { file: -1, row: 0 }, ArrowRight: { file: 1, row: 0 },
+      ArrowUp: { file: 0, row: -1 }, ArrowDown: { file: 0, row: 1 },
+    };
+    const direction = directions[event.key];
+    if (!direction) return;
+    event.preventDefault();
+    setPosition((current) => ({
+      file: Math.min(7, Math.max(0, current.file + direction.file)),
+      row: Math.min(7, Math.max(0, current.row + direction.row)),
+    }));
+  }
+
+  const square = `${files[position.file]}${8 - position.row}`;
+
+  return <div className="board-graphic" ref={boardRef} aria-label="Interactive chessboard. Move the pawn by dragging it to a square or using the arrow keys.">
+    {Array.from({ length: 64 }, (_, index) => <span aria-hidden="true" className={(Math.floor(index / 8) + index % 8) % 2 ? "is-dark" : ""} key={index} />)}
+    <button
+      aria-label={`White pawn on ${square}. Drag it to another square or use the arrow keys. It stays inside the board.`}
+      className={`board-pawn${dragging ? " is-dragging" : ""}`}
+      onKeyDown={handleKeyDown}
+      onLostPointerCapture={() => setDragging(false)}
+      onPointerDown={(event) => { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); setDragging(true); }}
+      onPointerMove={(event) => { if (dragging && event.buttons !== 0) moveToPointer(event.clientX, event.clientY); }}
+      onPointerUp={(event) => { if (dragging) moveToPointer(event.clientX, event.clientY); setDragging(false); }}
+      style={{ left: `${position.file * 12.5}%`, top: `${position.row * 12.5}%` }}
+      type="button"
+    >♙</button>
+    <span className="sr-only" aria-live="polite">White pawn is on {square}.</span>
+  </div>;
+}
+
