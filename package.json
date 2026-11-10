@@ -24,7 +24,7 @@
     "@types/node": "^22.19.0",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
-    "tailwindcss": "^4.3.4",
+    "tailwindcss": "^4.3.5",
     "typescript": "^5.9.3"
   },
   "description": "A personal chess mentor that helps players learn the intent behind their moves."
