@@ -3,11 +3,44 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Chess, type Square } from "chess.js";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import BrandMark from "./brand-mark";
 
 gsap.registerPlugin(ScrollTrigger);
+
+function handlePieceDragStart(event: DragEvent<HTMLSpanElement>, selectPiece: () => void) {
+  selectPiece();
+
+  const source = event.currentTarget;
+  const sourceStyle = window.getComputedStyle(source);
+  const dragImage = source.cloneNode(true) as HTMLSpanElement;
+  Object.assign(dragImage.style, {
+    position: "fixed",
+    top: "0",
+    left: "0",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    margin: "0",
+    padding: "0",
+    border: "0",
+    background: "transparent",
+    boxShadow: "none",
+    color: sourceStyle.color,
+    fontFamily: sourceStyle.fontFamily,
+    fontSize: sourceStyle.fontSize,
+    lineHeight: sourceStyle.lineHeight,
+    textShadow: sourceStyle.textShadow,
+    pointerEvents: "none",
+    zIndex: "-1",
+  });
+
+  document.body.appendChild(dragImage);
+  event.dataTransfer.setDragImage(dragImage, dragImage.offsetWidth / 2, dragImage.offsetHeight / 2);
+  window.setTimeout(() => dragImage.remove(), 0);
+}
 
 type Page = "dashboard" | "play" | "review" | "progress";
 type Summary = {
@@ -24,6 +57,20 @@ type BrowserSavedGame = {
   fen: string;
   move_count: number;
   updated_at: string;
+};
+
+type CapturedPiece = {
+  id: string;
+  capturedBy: "w" | "b";
+  color: "w" | "b";
+  name: string;
+  symbol: string;
+};
+
+type GameOutcome = {
+  kind: "win" | "draw";
+  headline: string;
+  detail: string;
 };
 
 const browserGamesKey = "morrow-chess.games.v1";
@@ -45,6 +92,7 @@ const fallbackSummary: Summary = {
 };
 
 const symbols: Record<string, string> = { wk: "♔", wq: "♕", wr: "♖", wb: "♗", wn: "♘", wp: "♙", bk: "♚", bq: "♛", br: "♜", bb: "♝", bn: "♞", bp: "♟" };
+const pieceNames: Record<string, string> = { p: "pawn", n: "knight", b: "bishop", r: "rook", q: "queen" };
 const navigation: Array<{ id: Page; label: string; icon: string; href: string }> = [
   { id: "dashboard", label: "Today", icon: "⌂", href: "/app" },
   { id: "play", label: "Learn & play", icon: "♞", href: "/play" },
@@ -126,6 +174,74 @@ function identifyOpening(moves: string[]) {
   return "A pattern is beginning to emerge";
 }
 
+function getGameOutcome(game: Chess): GameOutcome | null {
+  if (game.isCheckmate()) {
+    return { kind: "win", headline: `${game.turn() === "w" ? "BLACK" : "WHITE"} WINS`, detail: "CHECKMATE" };
+  }
+  if (game.isStalemate()) return { kind: "draw", headline: "DRAW", detail: "STALEMATE" };
+  if (!game.isDraw()) return null;
+
+  const detail = game.isThreefoldRepetition()
+    ? "REPETITION"
+    : game.isInsufficientMaterial()
+      ? "INSUFFICIENT MATERIAL"
+      : game.isDrawByFiftyMoves()
+        ? "50-MOVE RULE"
+        : "DRAW";
+  return { kind: "draw", headline: "DRAW", detail };
+}
+
+function GameStatus({ game, outcome }: { game: Chess; outcome: GameOutcome | null }) {
+  if (outcome) {
+    return (
+      <span className={`game-outcome game-outcome-${outcome.kind}`} role="status" aria-live="polite">
+        <strong>{outcome.headline}</strong>
+        <small>{outcome.detail}</small>
+      </span>
+    );
+  }
+
+  return (
+    <span className={`turn-indicator${game.isCheck() ? " is-check" : ""}`} role="status" aria-live="polite">
+      <i aria-hidden="true" />
+      {game.turn() === "w" ? "WHITE" : "BLACK"} TO MOVE{game.isCheck() ? " · IN CHECK" : ""}
+    </span>
+  );
+}
+
+function CapturedPieces({ pieces }: { pieces: CapturedPiece[] }) {
+  const byWhite = pieces.filter((piece) => piece.capturedBy === "w");
+  const byBlack = pieces.filter((piece) => piece.capturedBy === "b");
+
+  return (
+    <div className="captured-pieces" aria-label="Captured pieces">
+      {([
+        { color: "w", label: "TAKEN BY WHITE", pieces: byWhite },
+        { color: "b", label: "TAKEN BY BLACK", pieces: byBlack },
+      ] as const).map((group) => (
+        <section className="captured-group" key={group.color} aria-label={group.label}>
+          <div className="captured-heading">
+            <span>{group.label}</span>
+            <b>{group.pieces.length}</b>
+          </div>
+          <div className="captured-list">
+            {group.pieces.length ? group.pieces.map((piece) => (
+              <span
+                key={piece.id}
+                className={`captured-piece ${piece.color === "w" ? "piece-white" : "piece-black"}`}
+                aria-label={`${piece.color === "w" ? "White" : "Black"} ${piece.name}`}
+                title={`${piece.color === "w" ? "White" : "Black"} ${piece.name}`}
+              >
+                {piece.symbol}
+              </span>
+            )) : <span className="capture-empty">NONE YET</span>}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
+
 export default function ChessWorkspace({ page }: { page: Page }) {
   const pathname = usePathname();
   const [summary, setSummary] = useState<Summary | null>(fallbackSummary);
@@ -164,7 +280,7 @@ export default function ChessWorkspace({ page }: { page: Page }) {
 
   return <div className="chess-app">
     <aside className="chess-sidebar">
-      <Link href="/app" className="chess-brand"><span className="brand-glyph">M</span><span><strong>morrow</strong><small>YOUR CHESS MENTOR</small></span></Link>
+      <Link href="/app" className="chess-brand"><BrandMark className="brand-glyph" /><span><strong>morrow</strong><small>YOUR CHESS MENTOR</small></span></Link>
       <div className="side-caption">YOUR SPACE</div>
       <nav aria-label="Main navigation">{navigation.map((item) => <Link key={item.id} href={item.href} className={(pathname === item.href ? "active " : "") + "side-link"}><span className="side-icon">{item.icon}</span>{item.label}{item.id === "play" && <i className="live-dot" />}</Link>)}</nav>
       <div className="sidebar-bottom"><div className="mentor-mini"><div className="mentor-orbit"><span>♔</span></div><div><small>MENTOR NOTE</small><p>Small plans build<br />strong habits.</p></div></div><div className="profile-row"><span className="avatar">A</span><span><b>Alex Morgan</b><small>Curious learner</small></span><span className="more">···</span></div></div>
@@ -206,6 +322,18 @@ function Play() {
   const files = "abcdefgh";
   const squares = board.flatMap((row, rank) => row.map((piece, file) => ({ piece, square: `${files[file]}${8 - rank}` as Square, rank, file })));
   const displayedSquares = flipped ? [...squares].reverse() : squares;
+  const outcome = getGameOutcome(game);
+  const capturedPieces = game.history({ verbose: true }).flatMap((move, index) => {
+    if (!move.captured) return [];
+    const color = move.color === "w" ? "b" : "w";
+    return [{
+      id: `${index}-${move.from}-${move.to}`,
+      capturedBy: move.color,
+      color,
+      name: pieceNames[move.captured],
+      symbol: symbols[`${color}${move.captured}`],
+    }];
+  });
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -243,7 +371,7 @@ function Play() {
   async function undo() { if (!game.undo()) return; setFen(game.fen()); setSelected(null); setBranch((n) => n + 1); setNotice("We stepped back. Try another idea and compare how the position changes."); if (gameIdRef.current) { saveBrowserGame(gameIdRef.current, game); await fetch("/api/chess/games", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: gameIdRef.current, pgn: game.pgn(), fen: game.fen() }) }).catch(() => {}); } }
   function reset() { game.reset(); setFen(game.fen()); gameIdRef.current = ""; setSelected(null); setBranch(0); setNotice("A fresh board. What would you like to explore?"); }
 
-  return <div className="page-content play-page"><div className="play-heading"><div><div className="eyebrow"><span className="eyebrow-line" /> LEARN BY EXPLORING</div><h1>Make a move.<br /><em>Find its meaning.</em></h1></div><span className="session-label"><i /> PRACTICE SESSION</span></div><div className="play-layout"><section className="board-panel"><div className="board-topline"><span>POSITION EXPLORER</span><span>{game.turn() === "w" ? "WHITE" : "BLACK"} TO MOVE</span></div><div className="board-wrap"><div className="chessboard" role="grid" aria-label="Interactive chess board">{displayedSquares.map(({ piece, square, rank, file }) => { const light = (rank + file) % 2 === 0; const isSelected = selected === square; const edgeFile = flipped ? file === 7 : file === 0; const edgeRank = flipped ? rank === 0 : rank === 7; return <button key={square} type="button" role="gridcell" aria-label={`${square}${piece ? ` ${piece.color === "w" ? "white" : "black"} ${piece.type}` : " empty"}`} className={`board-square ${light ? "light" : "dark"} ${isSelected ? "selected" : ""}`} onClick={() => choose(square)} onDragOver={(e) => e.preventDefault()} onDrop={() => choose(square)}>{piece && <span draggable onDragStart={() => setSelected(square)} className={`piece ${piece.color === "w" ? "piece-white" : "piece-black"}`}>{symbols[`${piece.color}${piece.type}`]}</span>}{edgeFile && <small className={light ? "coord-dark" : "coord-light"}>{flipped ? rank + 1 : 8 - rank}</small>}{edgeRank && <small className={`file-coord ${light ? "coord-dark" : "coord-light"}`}>{files[flipped ? 7 - file : file]}</small>}</button>; })}</div></div><div className="board-controls"><button onClick={undo} className="control-button">← <span>Undo</span></button><button onClick={reset} className="control-button">↻ <span>Reset</span></button><div className="branch-count">{branch ? `${branch} alternate ${branch === 1 ? "line" : "lines"} explored` : "Learn mode · explore freely"}</div><button className="control-button" onClick={() => setFlipped((value) => !value)}>⇅ <span>Flip</span></button></div></section><aside className="mentor-panel"><div className="mentor-panel-head"><span className="mentor-avatar">♔</span><div><small>YOUR PERSONAL MENTOR</small><b>Let’s think it through</b></div><span className="online-dot" /></div><div className="mentor-message"><div className="message-tag">POSITION NOTE <span>✳</span></div><p>{notice}</p><div className="mentor-question">What does your move improve — and what does it leave behind?</div></div><div className="position-detail"><div className="detail-label">MOVE HISTORY</div><div className="move-history">{game.history().length ? game.history().map((move, i) => <span key={`${i}-${move}`}><small>{Math.floor(i / 2) + 1}{i % 2 ? "..." : "."}</small>{move}</span>) : <span className="empty-moves">The first move is yours.</span>}</div><div className="detail-label opening-label">OPENING PATTERN <span>DETECTING</span></div><div className="opening-note">{game.history().length >= 2 ? identifyOpening(game.history()) : "Waiting for a few moves"}</div></div><div className="mentor-panel-foot"><span>RULE-BASED GUIDANCE</span><span>UNDO WITH <kbd>CTRL</kbd> + <kbd>Z</kbd></span></div></aside></div><p className="play-footnote">Explore freely. Undo a move to try another line and see what changes.</p></div>;
+  return <div className="page-content play-page"><div className="play-heading"><div><div className="eyebrow"><span className="eyebrow-line" /> LEARN BY EXPLORING</div><h1>Make a move.<br /><em>Find its meaning.</em></h1></div><span className="session-label"><i /> PRACTICE SESSION</span></div><div className="play-layout"><section className="board-panel"><div className="board-topline"><span>POSITION EXPLORER</span><GameStatus game={game} outcome={outcome} /></div><div className="board-wrap"><div className="chessboard" role="grid" aria-label="Interactive chess board">{displayedSquares.map(({ piece, square, rank, file }) => { const light = (rank + file) % 2 === 0; const isSelected = selected === square; const edgeFile = flipped ? file === 7 : file === 0; const edgeRank = flipped ? rank === 0 : rank === 7; return <button key={square} type="button" role="gridcell" aria-label={`${square}${piece ? ` ${piece.color === "w" ? "white" : "black"} ${piece.type}` : " empty"}`} className={`board-square ${light ? "light" : "dark"} ${isSelected ? "selected" : ""}`} onClick={() => choose(square)} onDragOver={(e) => e.preventDefault()} onDrop={() => choose(square)}>{piece && <span draggable onDragStart={(event) => handlePieceDragStart(event, () => setSelected(square))} className={`piece ${piece.color === "w" ? "piece-white" : "piece-black"}`}>{symbols[`${piece.color}${piece.type}`]}</span>}{edgeFile && <small className={light ? "coord-dark" : "coord-light"}>{flipped ? rank + 1 : 8 - rank}</small>}{edgeRank && <small className={`file-coord ${light ? "coord-dark" : "coord-light"}`}>{files[flipped ? 7 - file : file]}</small>}</button>; })}</div></div><CapturedPieces pieces={capturedPieces} /><div className="board-controls"><button onClick={undo} className="control-button">← <span>Undo</span></button><button onClick={reset} className="control-button">↻ <span>Reset</span></button><div className="branch-count">{branch ? `${branch} alternate ${branch === 1 ? "line" : "lines"} explored` : "Learn mode · explore freely"}</div><button className="control-button" onClick={() => setFlipped((value) => !value)}>⇅ <span>Flip</span></button></div></section><aside className="mentor-panel"><div className="mentor-panel-head"><span className="mentor-avatar">♔</span><div><small>YOUR PERSONAL MENTOR</small><b>Let’s think it through</b></div><span className="online-dot" /></div><div className="mentor-message"><div className="message-tag">POSITION NOTE <span>✳</span></div><p>{notice}</p><div className="mentor-question">What does your move improve — and what does it leave behind?</div></div><div className="position-detail"><div className="detail-label">MOVE HISTORY</div><div className="move-history">{game.history().length ? game.history().map((move, i) => <span key={`${i}-${move}`}><small>{Math.floor(i / 2) + 1}{i % 2 ? "..." : "."}</small>{move}</span>) : <span className="empty-moves">The first move is yours.</span>}</div><div className="detail-label opening-label">OPENING PATTERN <span>DETECTING</span></div><div className="opening-note">{game.history().length >= 2 ? identifyOpening(game.history()) : "Waiting for a few moves"}</div></div><div className="mentor-panel-foot"><span>RULE-BASED GUIDANCE</span><span>UNDO WITH <kbd>CTRL</kbd> + <kbd>Z</kbd></span></div></aside></div><p className="play-footnote">Explore freely. Undo a move to try another line and see what changes.</p></div>;
 }
 
 function Review({ summary }: { summary: Summary | null }) {

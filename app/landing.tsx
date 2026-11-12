@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 import Link from "next/link";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import BrandMark from "./brand-mark";
 
 const pawn = `       .---.\n      /     \\\n     |       |\n     |       |\n      \\     /\n       |   |\n       |   |\n      /     \\\n     /       \\\n    /_________\\`;
 
@@ -44,7 +45,7 @@ export default function ChessLanding() {
     <main className="morrow-landing">
       <header className="landing-header">
         <Link className="landing-brand" href="/" aria-label="Morrow Chess Mentor home">
-          <span className="landing-mark">M</span><span>MORROW<span className="brand-small">CHESS MENTOR</span></span>
+          <BrandMark className="landing-mark" /><span>MORROW<span className="brand-small">CHESS MENTOR</span></span>
         </Link>
         <nav aria-label="Main navigation">
           <a href="#method">THE METHOD</a>
@@ -93,7 +94,7 @@ export default function ChessLanding() {
 
       <footer className="landing-footer">
         <div className="footer-top"><span className="eyebrow-mono">THE NEXT GOOD MOVE STARTS HERE</span><Link href="/app">OPEN MORROW <span>↗</span></Link></div>
-        <div className="footer-bottom"><Link className="landing-brand" href="/"><span className="landing-mark">M</span><span>MORROW<span className="brand-small">CHESS MENTOR</span></span></Link><span>THINK CLEARER. PLAY YOUR GAME.</span><span>© MORROW 2026</span></div>
+        <div className="footer-bottom"><Link className="landing-brand" href="/"><BrandMark className="landing-mark" /><span>MORROW<span className="brand-small">CHESS MENTOR</span></span></Link><span>THINK CLEARER. PLAY YOUR GAME.</span><span>© MORROW 2026</span></div>
       </footer>
     </main>
   );

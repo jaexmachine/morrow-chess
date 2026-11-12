@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" role="img" aria-labelledby="title desc">
+  <title id="title">Morrow Chess logo directions</title>
+  <desc id="desc">Three monochrome logo sketches using acid lime as the accent: a crowned pawn, a Morrow M with a chess move, and an M shaped like a chess crown.</desc>
+  <defs>
+    <pattern id="dots" width="18" height="18" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r=".8" fill="#f1f1ef" opacity=".18" />
+    </pattern>
+  </defs>
+  <rect width="1200" height="560" fill="#080808" />
+  <rect width="1200" height="560" fill="url(#dots)" />
+  <text x="52" y="48" fill="#C6F545" font-family="Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="2.2">MORROW / IDENTITY STUDIES</text>
+  <text x="52" y="100" fill="#f1f1ef" font-family="Arial, sans-serif" font-size="34" font-weight="800" letter-spacing="-1.5">Three mark directions</text>
+  <text x="1148" y="48" fill="#92928f" text-anchor="end" font-family="monospace" font-size="10" letter-spacing="1.5">BLACK / WHITE / ACID LIME</text>
+
+  <g>
+    <rect x="52" y="132" width="348" height="356" fill="#0d0d0d" stroke="#373735" />
+    <path d="M195 221 L205 193 L220 210 L235 184 L250 210 L265 193 L275 221 Z" fill="#C6F545" />
+    <path d="M197 227 H273 V237 H197 Z" fill="#C6F545" />
+    <circle cx="235" cy="263" r="24" fill="#f1f1ef" />
+    <path d="M220 291 C220 304 211 313 205 320 H265 C259 313 250 304 250 291 Z" fill="#f1f1ef" />
+    <path d="M195 325 C195 319 200 315 206 315 H264 C270 315 275 319 275 325 V331 H195 Z" fill="#f1f1ef" />
+    <path d="M186 341 C186 333 193 328 202 328 H268 C277 328 284 333 284 341 V347 H186 Z" fill="#C6F545" />
+    <text x="78" y="386" fill="#C6F545" font-family="monospace" font-size="10" letter-spacing="1.5">01 / THE PIECE</text>
+    <text x="78" y="420" fill="#f1f1ef" font-family="Arial, sans-serif" font-size="22" font-weight="800">Crowned Pawn</text>
+    <text x="78" y="449" fill="#aaa" font-family="Arial, sans-serif" font-size="12">A familiar pawn rises into a small crown.</text>
+    <text x="78" y="468" fill="#aaa" font-family="Arial, sans-serif" font-size="12">A simple mark for growth and earned mastery.</text>
+  </g>
+
+  <g>
+    <rect x="426" y="132" width="348" height="356" fill="#0d0d0d" stroke="#373735" />
+    <path d="M495 310 V196 L550 251 L605 196 V310" fill="none" stroke="#f1f1ef" stroke-width="18" stroke-linecap="square" stroke-linejoin="miter" />
+    <path d="M608 295 H636 V323 H608 Z" fill="#C6F545" />
+    <path d="M617 309 H642" fill="none" stroke="#C6F545" stroke-width="3" />
+    <text x="452" y="386" fill="#C6F545" font-family="monospace" font-size="10" letter-spacing="1.5">02 / THE NAME</text>
+    <text x="452" y="420" fill="#f1f1ef" font-family="Arial, sans-serif" font-size="22" font-weight="800">Morrow M</text>
+    <text x="452" y="449" fill="#aaa" font-family="Arial, sans-serif" font-size="12">The first letter becomes a confident board mark.</text>
+    <text x="452" y="468" fill="#aaa" font-family="Arial, sans-serif" font-size="12">A lime move points toward what comes next.</text>
+  </g>
+
+  <g>
+    <rect x="800" y="132" width="348" height="356" fill="#0d0d0d" stroke="#373735" />
+    <path d="M861 315 V202 L902 236 L934 190 L966 236 L1007 202 V315 H987 V242 L963 265 L934 223 L905 265 L881 242 V315 Z" fill="#f1f1ef" />
+    <path d="M861 315 H1007 V329 H861 Z" fill="#C6F545" />
+    <circle cx="861" cy="202" r="7" fill="#C6F545" />
+    <circle cx="934" cy="190" r="7" fill="#C6F545" />
+    <circle cx="1007" cy="202" r="7" fill="#C6F545" />
+    <text x="826" y="386" fill="#C6F545" font-family="monospace" font-size="10" letter-spacing="1.5">03 / THE CROWN</text>
+    <text x="826" y="420" fill="#f1f1ef" font-family="Arial, sans-serif" font-size="22" font-weight="800">Crown M</text>
+    <text x="826" y="449" fill="#aaa" font-family="Arial, sans-serif" font-size="12">An M built from the peaks of a chess crown.</text>
+    <text x="826" y="468" fill="#aaa" font-family="Arial, sans-serif" font-size="12">The wordmark and symbol become one.</text>
+  </g>
+
+  <text x="52" y="530" fill="#92928f" font-family="monospace" font-size="9" letter-spacing="1.2">MORROW CHESS MENTOR</text>
+  <text x="1148" y="530" fill="#92928f" text-anchor="end" font-family="monospace" font-size="9" letter-spacing="1.2">EARLY CONCEPTS / NOT FINAL ARTWORK</text>
+</svg>
