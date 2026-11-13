@@ -236,9 +236,27 @@ kbd { border-color: #595957; color: #ddd; }
 .captured-piece.piece-white { color: #f1f1ef; text-shadow: 0 1px 1px #000; }
 .captured-piece.piece-black { color: #8e8e8a; text-shadow: 0 1px 0 #000; }
 .capture-empty { color: #686865; font: 8px "DM Mono", monospace; letter-spacing: .04em; }
+.quiet-empty { margin: 0; padding: 22px 8px; border-top: 1px solid var(--line); color: #888885; font-size: 12px; }
+.result-saved { border: 1px solid #555; background: transparent; color: #ccc; }
+.saved-game-list { margin-top: 24px; border-top: 1px solid var(--line); }
+.saved-game-row { min-height: 72px; display: grid; grid-template-columns: 90px minmax(0, 1fr) 60px; align-items: center; gap: 14px; border-bottom: 1px solid var(--line); }
+.saved-game-date { color: #999; font: 9px "DM Mono", monospace; }
+.saved-game-row h2 { margin: 0; color: #eee; font: 700 14px Arial, sans-serif; }
+.saved-game-row p { margin: 5px 0 0; color: #999; font-size: 10px; }
+.empty-state { display: grid; justify-items: start; gap: 14px; margin-top: 28px; padding: clamp(22px, 4vw, 38px); border: 1px solid #363634; background: #111110; }
+.empty-state>span, .progress-empty-label { color: var(--accent); font: 700 9px "DM Mono", monospace; letter-spacing: .12em; }
+.empty-state h2 { margin: 0; color: #f1f1ef; font: 800 clamp(23px, 3vw, 34px)/1.05 Arial, sans-serif; letter-spacing: -.04em; }
+.empty-state p { max-width: 430px; margin: 0; color: #aaa; font-size: 13px; line-height: 1.7; }
+.progress-empty { display: flex; align-items: center; gap: 22px; margin-top: 32px; padding: 25px; border: 1px solid #363634; background: #111110; }
+.progress-empty-count { color: var(--accent); font: 800 clamp(42px, 6vw, 64px)/1 Arial, sans-serif; letter-spacing: -.06em; }
+.progress-empty>div { flex: 1; }
+.progress-empty p { margin: 7px 0 0; color: #aaa; font-size: 12px; line-height: 1.6; }
 
 @media (max-width: 760px) {
   .captured-pieces { gap: 8px; margin-inline: 2px; padding-inline: 4px; }
   .captured-heading { font-size: 7px; }
   .captured-piece { font-size: 21px; }
+  .saved-game-row { grid-template-columns: 52px minmax(0, 1fr) 48px; gap: 8px; }
+  .progress-empty { flex-wrap: wrap; gap: 14px; padding: 19px; }
+  .progress-empty>div { flex-basis: calc(100% - 70px); }
 }
