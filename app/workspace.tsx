@@ -311,7 +311,7 @@ function Play() {
   const outcome = getGameOutcome(game);
   const capturedPieces = game.history({ verbose: true }).flatMap((move, index) => {
     if (!move.captured) return [];
-    const color = move.color === "w" ? "b" : "w";
+    const color: "w" | "b" = move.color === "w" ? "b" : "w";
     return [{
       id: `${index}-${move.from}-${move.to}`,
       capturedBy: move.color,
