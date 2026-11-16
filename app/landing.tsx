@@ -6,7 +6,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import BrandMark from "./brand-mark";
 
-const pawn = `       .---.\n      /     \\\n     |       |\n     |       |\n      \\     /\n       |   |\n       |   |\n      /     \\\n     /       \\\n    /_________\\`;
+const pawn = `       .---.       \n      /     \\      \n     |       |     \n     |       |     \n      \\     /      \n       |   |       \n       |   |       \n      /     \\      \n     /       \\     \n   /_________\\   `;
 
 export default function ChessLanding() {
   const sceneRef = useRef<HTMLElement>(null);
@@ -64,7 +64,6 @@ export default function ChessLanding() {
           <pre className="pawn-depth pawn-depth-one">{pawn}</pre>
           <pre className="pawn-face">{pawn}</pre>
         </div>
-        <div className="pawn-coordinate" aria-hidden="true">A SMALL PIECE.<br />A BIGGER PICTURE.</div>
         <div className="scene-note" ref={noteRef}><span className="scroll-line" />SCROLL TO SEE WHAT OPENS UP</div>
         <div className="landing-reveal" ref={messageRef}>
           <p className="eyebrow-mono">LEARN THE REASON BEHIND THE MOVE</p>
@@ -82,9 +81,9 @@ export default function ChessLanding() {
       <section className="learning-sequence" id="practice">
         <div className="sequence-heading"><span className="eyebrow-mono">A PRACTICE THAT ADDS UP</span><h2>See it.<br />Understand it.<br /><span>Use it.</span></h2></div>
         <div className="sequence-steps">
-          <article><span>01 / REVIEW</span><h3>Look back without judgment.</h3><p>Find the moments that changed your game, with a mentor who makes the position easier to read.</p><b>↘</b></article>
-          <article><span>02 / EXPLORE</span><h3>Try another way through.</h3><p>Compare candidate moves, follow the consequences, and learn what the board was asking of you.</p><b>↘</b></article>
-          <article><span>03 / RETURN</span><h3>Notice what’s getting stronger.</h3><p>See the patterns you’re improving and choose one clear idea to take into your next game.</p><b>↗</b></article>
+          <article><span>01 / REVIEW</span><h3>Look back without judgment.</h3><p>Find the moments that changed your game, with a mentor who makes the position easier to read.</p></article>
+          <article><span>02 / EXPLORE</span><h3>Try another way through.</h3><p>Compare candidate moves, follow the consequences, and learn what the board was asking of you.</p></article>
+          <article><span>03 / RETURN</span><h3>Notice what’s getting stronger.</h3><p>See the patterns you’re improving and choose one clear idea to take into your next game.</p></article>
         </div>
       </section>
 
